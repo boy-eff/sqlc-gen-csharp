@@ -146,7 +146,7 @@ public class CommonGen(DbDriver dbDriver)
 
     private static string CheckNullExpression(int ordinal)
     {
-        return $"{Variable.Reader.AsVarName()}.IsDBNull({ordinal})";
+        return $"await {Variable.Reader.AsVarName()}.IsDBNullAsync({ordinal})";
     }
 
     private string GetReadExpression(Column column, int ordinal, Query query)
