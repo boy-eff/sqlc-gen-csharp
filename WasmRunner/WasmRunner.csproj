@@ -4,20 +4,15 @@
         <RootNamespace>SqlcGenCsharp</RootNamespace>
         <OutputType>Exe</OutputType>
         <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
+        <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
 
-        <!-- Критично для стабильности sqlc WASM-плагинов -->
-        <PublishTrimmed>false</PublishTrimmed>
+        <!--    WASM related config to reduce file size - currently not very successfully:-->
         <WasmSingleFileBundle>true</WasmSingleFileBundle>
-
-        <!-- Полезные отключения (можно оставить) -->
+        <PublishTrimmed>true</PublishTrimmed>
         <EventSourceSupport>false</EventSourceSupport>
         <UseSystemResourceKeys>true</UseSystemResourceKeys>
         <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
         <DebuggerSupport>false</DebuggerSupport>
-
-        <!-- Дополнительно помогает в некоторых случаях -->
-        <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
-        <OptimizationPreference>Size</OptimizationPreference>
     </PropertyGroup>
 
     <ItemGroup>
