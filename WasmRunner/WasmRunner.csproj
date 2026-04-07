@@ -18,9 +18,6 @@
         <!-- Дополнительно помогает в некоторых случаях -->
         <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
         <OptimizationPreference>Size</OptimizationPreference>
-
-        <Optimize>false</Optimize>
-        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <ItemGroup>
