@@ -12,11 +12,11 @@ public class ExecRowsDeclareGen(DbDriver dbDriver)
     {
         var parametersStr = CommonGen.GetMethodParameterList(argInterface, query.Params);
         return ParseMemberDeclaration($$"""
-            public async Task<long> {{query.Name.ToMethodName(dbDriver.Options.WithAsyncSuffix)}}({{parametersStr}})
-            {
-                {{GetMethodBody(queryTextConstant, query)}}
-            }
-            """)!;
+                                        public async Task<long> {{query.Name.ToMethodName(dbDriver.Options.WithAsyncSuffix)}}({{parametersStr}})
+                                        {
+                                            {{GetMethodBody(queryTextConstant, query)}}
+                                        }
+                                        """)!;
     }
 
     private string GetMethodBody(string queryTextConstant, Query query)
@@ -29,26 +29,18 @@ public class ExecRowsDeclareGen(DbDriver dbDriver)
         var transactionProperty = Variable.Transaction.AsPropertyName();
 
         var noTxBody = useDapper ? GetDapperNoTxBody(sqlVar, query) : GetDriverNoTxBody(sqlVar, query);
-        var withTxBody = useDapper ? GetDapperWithTxBody(sqlVar, query) : GetDriverWithTxBody(sqlVar, query);
 
         return $$"""
                     {{sqlTextTransform}}
                     {{dapperParams}}
-                    if (this.{{transactionProperty}} == null)
-                    {
-                        {{noTxBody}}
-                    }
-                    {{withTxBody}}
+                    {{noTxBody}}
                  """;
     }
 
     private string GetDapperNoTxBody(string sqlVar, Query query)
     {
-        var connectionCommands = dbDriver.EstablishConnection(query);
         var dapperArgs = CommonGen.GetDapperArgs(query);
-        return connectionCommands.GetConnectionOrDataSource.WrapBlock(
-            $"return await {Variable.Connection.AsVarName()}.ExecuteAsync({sqlVar}{dapperArgs});"
-        );
+        return $"return await {Variable.Connection.AsFieldName()}.ExecuteAsync({sqlVar}{dapperArgs});";
     }
 
     private string GetDapperWithTxBody(string sqlVar, Query query)
@@ -56,31 +48,28 @@ public class ExecRowsDeclareGen(DbDriver dbDriver)
         var transactionProperty = Variable.Transaction.AsPropertyName();
         var dapperArgs = CommonGen.GetDapperArgs(query);
         return $$"""
-            {{dbDriver.TransactionConnectionNullExcetionThrow}}
-            return await this.{{transactionProperty}}.Connection.ExecuteAsync(
-                    {{sqlVar}}{{dapperArgs}},
-                    transaction: this.{{transactionProperty}});
-        """;
+                     {{dbDriver.TransactionConnectionNullExcetionThrow}}
+                     return await this.{{transactionProperty}}.Connection.ExecuteAsync(
+                             {{sqlVar}}{{dapperArgs}},
+                             transaction: this.{{transactionProperty}});
+                 """;
     }
 
     private string GetDriverNoTxBody(string sqlVar, Query query)
     {
-        var connectionCommands = dbDriver.EstablishConnection(query);
         var sqlCommands = dbDriver.CreateSqlCommand(sqlVar);
         var commandBlock = sqlCommands.CommandCreation.WrapBlock(
             $"""
-            {sqlCommands.SetCommandText.AppendSemicolonUnlessEmpty()}
-            {dbDriver.AddParametersToCommand(query)}
-            {sqlCommands.PrepareCommand.AppendSemicolonUnlessEmpty()}
-            return await {Variable.Command.AsVarName()}.ExecuteNonQueryAsync();
-            """
+             {sqlCommands.SetCommandText.AppendSemicolonUnlessEmpty()}
+             {dbDriver.AddParametersToCommand(query)}
+             {sqlCommands.PrepareCommand.AppendSemicolonUnlessEmpty()}
+             return await {Variable.Command.AsVarName()}.ExecuteNonQueryAsync();
+             """
         );
-        return connectionCommands.GetConnectionOrDataSource.WrapBlock(
+        return
             $$"""
-            {{connectionCommands.ConnectionOpen.AppendSemicolonUnlessEmpty()}}
-            {{commandBlock}}
-            """
-        );
+              {{commandBlock}}
+              """;
     }
 
     private string GetDriverWithTxBody(string sqlVar, Query query)
@@ -89,14 +78,14 @@ public class ExecRowsDeclareGen(DbDriver dbDriver)
         var commandVar = Variable.Command.AsVarName();
 
         return $$"""
-            {{dbDriver.TransactionConnectionNullExcetionThrow}}
-            using (var {{commandVar}} = this.{{transactionProperty}}.Connection.CreateCommand())
-            {
-                {{commandVar}}.CommandText = {{sqlVar}};
-                {{commandVar}}.Transaction = this.{{transactionProperty}};
-                {{dbDriver.AddParametersToCommand(query)}}
-                return await {{commandVar}}.ExecuteNonQueryAsync();
-            }
-        """;
+                     {{dbDriver.TransactionConnectionNullExcetionThrow}}
+                     using (var {{commandVar}} = this.{{transactionProperty}}.Connection.CreateCommand())
+                     {
+                         {{commandVar}}.CommandText = {{sqlVar}};
+                         {{commandVar}}.Transaction = this.{{transactionProperty}};
+                         {{dbDriver.AddParametersToCommand(query)}}
+                         return await {{commandVar}}.ExecuteNonQueryAsync();
+                     }
+                 """;
     }
 }

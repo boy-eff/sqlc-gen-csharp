@@ -552,43 +552,19 @@ public sealed class NpgsqlDriver : EnumDbDriver, IOne, IMany, IExec, IExecRows, 
 
     public override string[] GetConstructorStatements()
     {
-        var baseStatements = base.GetConstructorStatements();
-        var dataSourceVar = Variable.DataSource.AsFieldName();
-        var connectionStringVar = Variable.ConnectionString.AsVarName();
-        var optionalNotNullVerify = Options.DotnetFramework.IsDotnetCore() ? "!" : string.Empty;
-
-        return
-        [
-            .. baseStatements,
-            $"""
-                {dataSourceVar} = new Lazy<NpgsqlDataSource>(() => NpgsqlDataSource.Create({connectionStringVar}{optionalNotNullVerify}), LazyThreadSafetyMode.ExecutionAndPublication);
-            """,
-        ];
+        return [$"this.{Variable.Connection.AsFieldName()} = {Variable.Connection.AsVarName()};"];
     }
 
     public override MemberDeclarationSyntax[] GetAdditionalClassMembers()
     {
-        var dataSourceField = Variable.DataSource.AsFieldName();
-        var optionalNotNullVerify = Options.DotnetFramework.IsDotnetCore() ? "?" : string.Empty;
-
         return [
             ParseMemberDeclaration($$"""
-                private readonly Lazy<NpgsqlDataSource>{{optionalNotNullVerify}} {{dataSourceField}};
-            """)!,
-            ParseMemberDeclaration($$"""
-            private NpgsqlDataSource GetDataSource()
-            {
-                if ({{dataSourceField}} == null)
-                    throw new InvalidOperationException("ConnectionString is required when not using a transaction");
-                return {{dataSourceField}}.Value;
-            }
-            """)!,
+                                         private readonly NpgsqlConnection {{Variable.Connection.AsFieldName()}};
+                                     """)!,
             ParseMemberDeclaration($$"""
             public void Dispose()
             {
                 GC.SuppressFinalize(this);
-                if ({{dataSourceField}}?.IsValueCreated == true)
-                    {{dataSourceField}}.Value.Dispose();
             }
             """)!
         ];
@@ -599,7 +575,7 @@ public sealed class NpgsqlDriver : EnumDbDriver, IOne, IMany, IExec, IExecRows, 
         var commandVar = Variable.Command.AsVarName();
         return new CommandGenCommands(
             CommandCreation: new(
-                $"var {commandVar} = {Variable.Connection.AsVarName()}.CreateCommand()",
+                $"var {commandVar} = {Variable.Connection.AsFieldName()}.CreateCommand()",
                 true),
             SetCommandText: $"{commandVar}.CommandText = {sqlTextConstant}",
             PrepareCommand: string.Empty
@@ -633,9 +609,8 @@ public sealed class NpgsqlDriver : EnumDbDriver, IOne, IMany, IExec, IExecRows, 
 
     public string GetCopyFromImpl(Query query, string queryTextConstant)
     {
-        var connectionCommands = EstablishConnection(query);
-        var beginBinaryImport = $"{Variable.Connection.AsVarName()}.BeginBinaryImportAsync({queryTextConstant}";
-        var connectionVar = Variable.Connection.AsVarName();
+        var beginBinaryImport = $"{Variable.Connection.AsFieldName()}.BeginBinaryImportAsync({queryTextConstant}";
+        var connectionVar = Variable.Connection.AsFieldName();
         var writerVar = Variable.Writer.AsVarName();
         var commandBlock = $$"""
             using (var {{writerVar}} = await {{beginBinaryImport}}))
@@ -644,12 +619,10 @@ public sealed class NpgsqlDriver : EnumDbDriver, IOne, IMany, IExec, IExecRows, 
                 await {{writerVar}}.CompleteAsync();
             }
         """;
-        return connectionCommands.GetConnectionOrDataSource.WrapBlock(
+        return
             $$"""
-            {{connectionCommands.ConnectionOpen.AppendSemicolonUnlessEmpty()}}
-            {{commandBlock}}
-            """
-        );
+              {{commandBlock}}
+              """;
 
         string AddRowsToCopyCommand()
         {

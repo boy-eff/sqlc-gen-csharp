@@ -33,50 +33,28 @@ public class ManyDeclareGen(DbDriver dbDriver)
         var transactionProperty = Variable.Transaction.AsPropertyName();
 
         var noTxBody = useDapper ? GetDapperNoTxBody(sqlVar, returnInterface, query) : GetDriverNoTxBody(sqlVar, returnInterface, query);
-        var withTxBody = useDapper ? GetDapperWithTxBody(sqlVar, returnInterface, query) : GetDriverWithTxBody(sqlVar, returnInterface, query);
 
         return $$"""
             {{sqlTextTransform}}
             {{dapperParams}}
-            if (this.{{transactionProperty}} == null)
-            {
-                {{noTxBody}}
-            }
-            {{withTxBody}}
+            {{noTxBody}}
         """;
     }
 
     private string GetDapperNoTxBody(string sqlVar, string returnInterface, Query query)
     {
-        var connectionCommands = dbDriver.EstablishConnection(query);
         var dapperArgs = CommonGen.GetDapperArgs(query);
         var returnType = dbDriver.AddNullableSuffixIfNeeded(returnInterface, true);
         var resultVar = Variable.Result.AsVarName();
-        return connectionCommands.GetConnectionOrDataSource.WrapBlock(
+        return
             $"""
-            var {resultVar} = await {Variable.Connection.AsVarName()}.QueryAsync<{returnType}>({sqlVar}{dapperArgs});
-            return {resultVar}.AsList();
-            """
-        );
-    }
-
-    private string GetDapperWithTxBody(string sqlVar, string returnInterface, Query query)
-    {
-        var transactionProperty = Variable.Transaction.AsPropertyName();
-        var dapperArgs = CommonGen.GetDapperArgs(query);
-        var returnType = dbDriver.AddNullableSuffixIfNeeded(returnInterface, true);
-
-        return $$"""
-            {{dbDriver.TransactionConnectionNullExcetionThrow}}
-            return (await this.{{transactionProperty}}.Connection.QueryAsync<{{returnType}}>(
-                    {{sqlVar}}{{dapperArgs}},
-                    transaction: this.{{transactionProperty}})).AsList();
-        """;
+             var {resultVar} = await {Variable.Connection.AsFieldName()}.QueryAsync<{returnType}>({sqlVar}{dapperArgs});
+             return {resultVar}.AsList();
+             """;
     }
 
     private string GetDriverNoTxBody(string sqlVar, string returnInterface, Query query)
     {
-        var connectionCommands = dbDriver.EstablishConnection(query);
         var dataclassInit = CommonGen.InstantiateDataclass([.. query.Columns], returnInterface, query);
         var resultVar = Variable.Result.AsVarName();
         var readWhileExists = $$"""
@@ -97,35 +75,9 @@ public class ManyDeclareGen(DbDriver dbDriver)
             }
             """
         );
-        return connectionCommands.GetConnectionOrDataSource.WrapBlock(
+        return
             $$"""
-            {{connectionCommands.ConnectionOpen.AppendSemicolonUnlessEmpty()}}
-            {{commandBlock}}
-            """
-        );
-    }
-
-    private string GetDriverWithTxBody(string sqlVar, string returnInterface, Query query)
-    {
-        var transactionProperty = Variable.Transaction.AsPropertyName();
-        var commandVar = Variable.Command.AsVarName();
-        var resultVar = Variable.Result.AsVarName();
-
-        return $$"""
-            {{dbDriver.TransactionConnectionNullExcetionThrow}}
-            using (var {{commandVar}} = this.{{transactionProperty}}.Connection.CreateCommand())
-            {
-                {{commandVar}}.CommandText = {{sqlVar}};
-                {{commandVar}}.Transaction = this.{{transactionProperty}};
-                {{dbDriver.AddParametersToCommand(query)}}
-                using ({{CommonGen.InitDataReader()}})
-                {
-                    var {{resultVar}} = new List<{{returnInterface}}>();
-                    while ({{CommonGen.AwaitReaderRow()}})
-                        {{resultVar}}.Add({{CommonGen.InstantiateDataclass([.. query.Columns], returnInterface, query)}});
-                    return {{resultVar}};
-                }
-            }
-        """;
+              {{commandBlock}}
+              """;
     }
 }

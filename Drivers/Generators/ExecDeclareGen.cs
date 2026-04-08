@@ -29,29 +29,22 @@ public class ExecDeclareGen(DbDriver dbDriver)
         var transactionProperty = Variable.Transaction.AsPropertyName();
 
         var noTxBody = useDapper ? GetDapperNoTxBody(sqlVar, query) : GetDriverNoTxBody(sqlVar, query);
-        var withTxBody = useDapper ? GetDapperWithTxBody(sqlVar, query) : GetDriverWithTxBody(sqlVar, query);
 
         return $$"""
                     {{sqlTextTransform}}
                     {{dapperParams}}
-                    if (this.{{transactionProperty}} == null)
-                    {
-                        {{noTxBody}}
-                    }
-                    {{withTxBody}}
+                    {{noTxBody}}
                  """;
     }
 
     private string GetDapperNoTxBody(string sqlVar, Query query)
     {
-        var connectionCommands = dbDriver.EstablishConnection(query);
         var dapperArgs = CommonGen.GetDapperArgs(query);
-        return connectionCommands.GetConnectionOrDataSource.WrapBlock(
+        return
             $"""
-            await {Variable.Connection.AsVarName()}.ExecuteAsync({sqlVar}{dapperArgs});
-            return;
-            """
-        );
+             await {Variable.Connection.AsFieldName()}.ExecuteAsync({sqlVar}{dapperArgs});
+             return;
+             """;
     }
 
     private string GetDapperWithTxBody(string sqlVar, Query query)
@@ -68,7 +61,6 @@ public class ExecDeclareGen(DbDriver dbDriver)
 
     private string GetDriverNoTxBody(string sqlVar, Query query)
     {
-        var connectionCommands = dbDriver.EstablishConnection(query);
         var sqlCommands = dbDriver.CreateSqlCommand(sqlVar);
         var commandBlock = sqlCommands.CommandCreation.WrapBlock(
             $"""
@@ -78,13 +70,11 @@ public class ExecDeclareGen(DbDriver dbDriver)
             await {Variable.Command.AsVarName()}.ExecuteNonQueryAsync();
             """
         );
-        return connectionCommands.GetConnectionOrDataSource.WrapBlock(
+        return
             $$"""
-            {{connectionCommands.ConnectionOpen.AppendSemicolonUnlessEmpty()}}
-            {{commandBlock}}
-            return;
-            """
-        );
+              {{commandBlock}}
+              return;
+              """;
     }
 
     private string GetDriverWithTxBody(string sqlVar, Query query)

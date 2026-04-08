@@ -80,23 +80,10 @@ internal partial class QueriesGen(DbDriver dbDriver, string namespaceName)
                           {{dapperStatements}}
                       }
 
-                      public {{className}}(string {{Variable.ConnectionString.AsVarName()}}) : this()
+                      public {{className}}(NpgsqlConnection {{Variable.Connection.AsVarName()}}) : this()
                       {
                           {{dbDriver.GetConstructorStatements().JoinByNewLine()}}
                       }
-
-                      private {{className}}({{dbDriver.TransactionClassName}} {{Variable.Transaction.AsVarName()}}) : this()
-                      {
-                          {{dbDriver.GetTransactionConstructorStatements().JoinByNewLine()}}
-                      }
-
-                      public static {{className}} WithTransaction({{dbDriver.TransactionClassName}} {{Variable.Transaction.AsVarName()}})
-                      {
-                          return new {{className}}({{Variable.Transaction.AsVarName()}});
-                      }
-
-                      private {{dbDriver.AddNullableSuffixIfNeeded(dbDriver.TransactionClassName, false)}} {{Variable.Transaction.AsPropertyName()}} { get; }
-                      private {{dbDriver.AddNullableSuffixIfNeeded("string", false)}} {{Variable.ConnectionString.AsPropertyName()}} { get; }
                   }
                 """)!;
 
