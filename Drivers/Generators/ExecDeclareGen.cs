@@ -65,6 +65,7 @@ public class ExecDeclareGen(DbDriver dbDriver)
         var commandBlock = sqlCommands.CommandCreation.WrapBlock(
             $"""
             {sqlCommands.SetCommandText.AppendSemicolonUnlessEmpty()}
+            
             {dbDriver.AddParametersToCommand(query)}
             {sqlCommands.PrepareCommand.AppendSemicolonUnlessEmpty()}
             await {Variable.Command.AsVarName()}.ExecuteNonQueryAsync();

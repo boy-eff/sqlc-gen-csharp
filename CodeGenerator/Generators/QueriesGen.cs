@@ -75,12 +75,7 @@ internal partial class QueriesGen(DbDriver dbDriver, string namespaceName)
                 $$"""
                   public class {{className}}{{baseTypesStr}}
                   {
-                      public {{className}}()
-                      {
-                          {{dapperStatements}}
-                      }
-
-                      public {{className}}(NpgsqlConnection {{Variable.Connection.AsVarName()}}) : this()
+                      public {{className}}(DbConnection {{Variable.Connection.AsVarName()}}, DbTransaction? {{Variable.Transaction.AsVarName()}})
                       {
                           {{dbDriver.GetConstructorStatements().JoinByNewLine()}}
                       }

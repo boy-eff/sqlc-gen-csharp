@@ -552,21 +552,30 @@ public sealed class NpgsqlDriver : EnumDbDriver, IOne, IMany, IExec, IExecRows, 
 
     public override string[] GetConstructorStatements()
     {
-        return [$"this.{Variable.Connection.AsFieldName()} = {Variable.Connection.AsVarName()};"];
+        return [$"{Variable.Connection.AsFieldName()} = {Variable.Connection.AsVarName()};", 
+            $"{Variable.Transaction.AsFieldName()} = {Variable.Transaction.AsVarName()};"];
     }
 
     public override MemberDeclarationSyntax[] GetAdditionalClassMembers()
     {
         return [
+            ParseMemberDeclaration($"private readonly DbConnection {Variable.Connection.AsFieldName()};")!,
+            ParseMemberDeclaration($"private readonly DbTransaction? {Variable.Transaction.AsFieldName()};")!,
             ParseMemberDeclaration($$"""
-                                         private readonly NpgsqlConnection {{Variable.Connection.AsFieldName()}};
+                                     private void AddParameterWithValue(DbCommand {{Variable.Command.AsVarName()}}, string parameterName, object value)
+                                     {
+                                         var parameter = {{Variable.Command.AsVarName()}}.CreateParameter();
+                                         parameter.ParameterName = parameterName;
+                                         parameter.Value = value;
+                                         {{Variable.Command.AsVarName()}}.Parameters.Add(parameter);
+                                     }
                                      """)!,
             ParseMemberDeclaration($$"""
-            public void Dispose()
-            {
-                GC.SuppressFinalize(this);
-            }
-            """)!
+                                     public void Dispose()
+                                     {
+                                         GC.SuppressFinalize(this);
+                                     }
+                                     """)!
         ];
     }
 
@@ -578,7 +587,7 @@ public sealed class NpgsqlDriver : EnumDbDriver, IOne, IMany, IExec, IExecRows, 
                 $"var {commandVar} = {Variable.Connection.AsFieldName()}.CreateCommand()",
                 true),
             SetCommandText: $"{commandVar}.CommandText = {sqlTextConstant}",
-            PrepareCommand: string.Empty
+            PrepareCommand: $"{commandVar}.Transaction = {Variable.Transaction.AsFieldName()}"
         );
     }
 
@@ -698,7 +707,7 @@ public sealed class NpgsqlDriver : EnumDbDriver, IOne, IMany, IExec, IExecRows, 
             var optionalTypeOverride = typeOverride is null
                 ? string.Empty
                 : $"{typeOverride}, ";
-            var addParamToCommand = $"""{commandVar}.Parameters.AddWithValue("@{p.Column.Name}", {optionalTypeOverride}{paramToWrite});""";
+            var addParamToCommand = $"""AddParameterWithValue({commandVar}, "@{p.Column.Name}", {paramToWrite});""";
             return addParamToCommand;
         }).JoinByNewLine();
     }
