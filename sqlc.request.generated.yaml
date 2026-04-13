@@ -31,6 +31,8 @@ sql:
           debugRequest: true
   # PostgresSQL
   - schema: ["examples/config/postgresql/authors/schema.sql", "examples/config/postgresql/types/schema.sql"]
+    # PostgresSQL
+
     queries: ["examples/config/postgresql/authors/query.sql", "examples/config/postgresql/types/query.sql"]
     engine: "postgresql"
     codegen:
@@ -229,6 +231,8 @@ sql:
           debugRequest: true
   # MySQL
   - schema: ["examples/config/mysql/authors/schema.sql", "examples/config/mysql/types/schema.sql"]
+    # MySQL
+
     queries: ["examples/config/mysql/authors/query.sql", "examples/config/mysql/types/query.sql"]
     engine: "mysql"
     codegen:
@@ -363,6 +367,8 @@ sql:
           debugRequest: true
   # Sqlite
   - schema: ["examples/config/sqlite/authors/schema.sql", "examples/config/sqlite/types/schema.sql"]
+    # Sqlite
+
     queries: ["examples/config/sqlite/authors/query.sql", "examples/config/sqlite/types/query.sql"]
     engine: "sqlite"
     codegen:

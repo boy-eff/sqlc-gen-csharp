@@ -3,7 +3,7 @@ plugins:
   - name: csharp
     wasm:
       url: file://dist/plugin.wasm
-      sha256: 1b9a5b39e02d258268ef8a48b0e51ba077c3333f6840bacf0ace778f316d430f
+      sha256: 85ef9098d9b0f634edc517e0a3727f5db07b15c1f5d44e21326b59f2d63352a8
 sql:
   # Basic quick start examples
   - schema: examples/config/postgresql/authors/schema.sql
@@ -24,8 +24,9 @@ sql:
     codegen:
       - plugin: csharp
         out: examples/QuickStartSqliteDalGen
-  # PostgresSQL
   - schema: ["examples/config/postgresql/authors/schema.sql", "examples/config/postgresql/types/schema.sql"]
+    # PostgresSQL
+
     queries: ["examples/config/postgresql/authors/query.sql", "examples/config/postgresql/types/query.sql"]
     engine: "postgresql"
     codegen:
@@ -217,8 +218,9 @@ sql:
               csharp_type:
                 type: "Instant"
                 notNull: false
-  # MySQL
   - schema: ["examples/config/mysql/authors/schema.sql", "examples/config/mysql/types/schema.sql"]
+    # MySQL
+
     queries: ["examples/config/mysql/authors/query.sql", "examples/config/mysql/types/query.sql"]
     engine: "mysql"
     codegen:
@@ -346,8 +348,9 @@ sql:
               csharp_type:
                 type: "Instant"
                 notNull: false
-  # Sqlite
   - schema: ["examples/config/sqlite/authors/schema.sql", "examples/config/sqlite/types/schema.sql"]
+    # Sqlite
+
     queries: ["examples/config/sqlite/authors/query.sql", "examples/config/sqlite/types/query.sql"]
     engine: "sqlite"
     codegen:
