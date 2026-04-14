@@ -562,7 +562,7 @@ public sealed class NpgsqlDriver : EnumDbDriver, IOne, IMany, IExec, IExecRows, 
             ParseMemberDeclaration($"private readonly DbConnection {Variable.Connection.AsFieldName()};")!,
             ParseMemberDeclaration($"private readonly DbTransaction? {Variable.Transaction.AsFieldName()};")!,
             ParseMemberDeclaration($$"""
-                                     private void AddParameterWithValue(DbCommand {{Variable.Command.AsVarName()}}, string parameterName, object value)
+                                     private static void AddParameterWithValue(DbCommand {{Variable.Command.AsVarName()}}, string parameterName, object value)
                                      {
                                          var parameter = {{Variable.Command.AsVarName()}}.CreateParameter();
                                          parameter.ParameterName = parameterName;
