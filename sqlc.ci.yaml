@@ -3,7 +3,7 @@ plugins:
   - name: csharp
     wasm:
       url: file://dist/plugin.wasm
-      sha256: b56a8ecb53709e44d80a23a663e2979afaf0e789584b22dfaa44d3949a2605b1
+      sha256: 1b363c82b6bdf6964ee3707b9558f907f713e6014141357e785377f982c46828
 sql:
   # Basic quick start examples
   - schema: examples/config/postgresql/authors/schema.sql

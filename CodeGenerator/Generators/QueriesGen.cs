@@ -127,7 +127,7 @@ internal partial class QueriesGen(DbDriver dbDriver, string namespaceName)
         if (transformedQueryText == string.Empty)
             return null;
         
-        transformedQueryText = $"--{query.Name}{Environment.NewLine}{transformedQueryText}";
+        transformedQueryText = $"-- {query.Name}{Environment.NewLine}{transformedQueryText}";
 
         var memberName = ClassMember.Sql.Name(query.Name);
         if (transformedQueryText.IndexOfAny(['\r', '\n']) >= 0)
